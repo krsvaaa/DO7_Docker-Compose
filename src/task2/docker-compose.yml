@@ -1,0 +1,168 @@
+services:
+  postgres:
+    build: "./services/postgres"
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    volumes:
+      - app:/var/lib/postgresql/data
+
+
+  rabbitmq:
+    build: "./services/rabbitmq"
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    environment:
+      RABBIT_MQ_USER: guest
+      RABBIT_MQ_PASSWORD: guest
+
+  session-service:
+    build: "./services/session-service"
+    container_name: session
+    ports:
+      - "8081:8081"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBIT_MQ_HOST: rabbitmq
+      RABBIT_MQ_PORT: 5672
+      RABBIT_MQ_USER: guest
+      RABBIT_MQ_PASSWORD: guest
+    depends_on:
+      - postgres
+
+
+  hotel-service:
+    build: "./services/hotel-service"
+    container_name: hotel
+    ports:
+      - "8082:8082"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: hotels_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      - postgres
+
+  payment-service:
+    build: "./services/payment-service"
+    container_name: payment
+    ports:
+      - "8084:8084"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      - postgres
+
+  loyalty-service:
+    build: "./services/loyalty-service"
+    container_name: loyalty
+    ports:
+      - "8085:8085"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: balances_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      - postgres
+
+
+  report-service:
+    build: "./services/report-service"
+    container_name: report
+    ports:
+      - "8086:8086"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: statistics_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBIT_MQ_HOST: rabbitmq
+      RABBIT_MQ_PORT: 5672
+      RABBIT_MQ_USER: guest
+      RABBIT_MQ_PASSWORD: guest
+      RABBIT_MQ_QUEUE_NAME: messagequeue
+      RABBIT_MQ_EXCHANGE: messagequeue-exchange
+    depends_on:
+      - postgres
+
+
+  booking-service:
+    build: "./services/booking-service"
+    container_name: booking
+    ports:
+      - "8083:8083"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: reservations_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBIT_MQ_HOST: rabbitmq
+      RABBIT_MQ_PORT: 5672
+      RABBIT_MQ_USER: guest
+      RABBIT_MQ_PASSWORD: guest
+      RABBIT_MQ_QUEUE_NAME: messagequeue
+      RABBIT_MQ_EXCHANGE: messagequeue-exchange
+      HOTEL_SERVICE_HOST: hotel
+      HOTEL_SERVICE_PORT: 8082
+      PAYMENT_SERVICE_HOST: payment
+      PAYMENT_SERVICE_PORT: 8084
+      LOYALTY_SERVICE_HOST: loyalty
+      LOYALTY_SERVICE_PORT: 8085
+    depends_on:
+      - postgres
+      - rabbitmq
+      - hotel-service
+      - payment-service
+      - loyalty-service
+
+  gateway-service:
+    build: "./services/gateway-service"
+    container_name: gateway
+    ports:
+      - "8087:8087"
+    environment:
+      SESSION_SERVICE_HOST: session
+      SESSION_SERVICE_PORT: 8081
+      HOTEL_SERVICE_HOST: hotel
+      HOTEL_SERVICE_PORT: 8082
+      BOOKING_SERVICE_HOST: booking
+      BOOKING_SERVICE_PORT: 8083
+      PAYMENT_SERVICE_HOST: payment
+      PAYMENT_SERVICE_PORT: 8084
+      LOYALTY_SERVICE_HOST: loyalty
+      LOYALTY_SERVICE_PORT: 8085
+      REPORT_SERVICE_HOST: report
+      REPORT_SERVICE_PORT: 8086
+    depends_on:
+      - session-service
+      - postgres
+      - hotel-service
+      - booking-service
+      - payment-service
+      - loyalty-service
+      - report-service
+
+
+volumes:
+  app:
+

@@ -1,0 +1,40 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.network "forwarded_port", guest: 5432, host: 5432    
+  config.vm.network "forwarded_port", guest: 5672, host: 5672   
+  config.vm.network "forwarded_port", guest: 15672, host: 15672  
+  config.vm.network "forwarded_port", guest: 8081, host: 8081    
+  config.vm.network "forwarded_port", guest: 8082, host: 8082    
+  config.vm.network "forwarded_port", guest: 8083, host: 8083    
+  config.vm.network "forwarded_port", guest: 8084, host: 8084    
+  config.vm.network "forwarded_port", guest: 8085, host: 8085    
+  config.vm.network "forwarded_port", guest: 8086, host: 8086    
+  config.vm.network "forwarded_port", guest: 8087, host: 8087    
+  
+  
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    apt-get install -y curl
+    curl -fsSL https://get.docker.com | sh
+    apt-get install -y docker-compose-plugin
+    usermod -aG docker vagrant
+    
+    if ! swapon --show | grep -q '/swapfile'; then
+      fallocate -l 2G /swapfile
+      chmod 600 /swapfile
+      mkswap /swapfile
+      swapon /swapfile
+      echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    fi
+    
+    cd /vagrant
+    docker compose up --build
+  SHELL
+  
+end
+
